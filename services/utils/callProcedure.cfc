@@ -16,10 +16,16 @@ component alias="services.utils.callProcedure" name="services.utils.callProcedur
 	};
 
 	/* EXAMPLE 
-		var outs = [{"variable_name":"p_cursor","variable_type":"CURSOR"},
-					{"variable_name":"vs_mensagem","variable_type":"VARCHAR"}];
+		
+		var method = "package.procedure";
+		
+		var args = [arg1, arg2, arg3];
 
-		callProcedure("procedure.extrato", [cd_cliente, dt_inicial, dt_final],outs);
+		var outs = [{"variable_name":"p_cursor","variable_type":"CURSOR"},
+					{"variable_name":"vs_message","variable_type":"VARCHAR"}];
+
+		return callProcedure(msg,args,outs);
+	
 	*/
 
 	private array function callProcedure (string method, 
@@ -30,12 +36,17 @@ component alias="services.utils.callProcedure" name="services.utils.callProcedur
 		{
 			var orDb = getConnection();
 			var named = arrayNew(1);
-			var sqlCallOracle = "{call "&method&"(";
+			var sqlCallOracle = "{call " & method & "(";
 
 			for (var k = 1; k <= arrayLen(args); k++)
-				arrayAppend(named, ":arg"&k);
+			{
+				arrayAppend(named, ":arg" & k);
+			};
 
-			arrayAppend(named, ":output");
+			for (var k = 1; k <= arrayLen(outs); k++)
+			{
+				arrayAppend(named, ":" & outs[k].variable_name);
+			};
 
 			sqlCallOracle &= arrayToList(named, ", ")&")}";
 			
@@ -43,8 +54,8 @@ component alias="services.utils.callProcedure" name="services.utils.callProcedur
 
 			for (var k = 1; k <= arrayLen(args); k++)
 			{
-				stmt.setObject("arg"&k, args[k]);
-			}
+				stmt.setObject("arg" & k, args[k]);
+			};
 
 			for (var k = 1; k <= arrayLen(outs); k++)
 			{
@@ -56,7 +67,11 @@ component alias="services.utils.callProcedure" name="services.utils.callProcedur
 				{
 					stmt.registerOutParameter(outs[k].variable_name, OracleTypes.VARCHAR);
 				}
-			}
+				else
+				{
+					throw "Tipo de variável de saída não implementada";
+				};
+			};
 
 			stmt.execute();
 			
@@ -92,8 +107,8 @@ component alias="services.utils.callProcedure" name="services.utils.callProcedur
 				else
 				{
 					throw "Tipo de variável de saída não implementada";
-				}
-			}
+				};
+			};
 
 			stmt.close();
 
